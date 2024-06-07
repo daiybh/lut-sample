@@ -7,6 +7,7 @@
 
 #include "CubeLUT.hpp"
 #include "applyTrilinear.hpp"
+#include "applyTrilinearHost.hpp"
 
 class Worker {
 public:
@@ -24,16 +25,24 @@ public:
 
 		std::cout << "[INFO] start applyTrilinear.....\n";
 		auto start = std::chrono::high_resolution_clock::now();
-		for(int i=0;i<1000;i++)
+		GpuTrilinear trilinear;
+		trilinear.init(w, h, channels, std::get<Table3D>(cube->getTable()));
+		printf("\n\n\n");
+		const int loopCount = 10;
+		for(int i=0;i< loopCount;i++)
 		{
-			Trilinear::applyTrilinear(srcRGBImage, destRGBImage, w, h, channels, 
-				std::get<Table3D>(cube->getTable()), 1.0f, 3);
+			//Trilinear::applyTrilinear(srcRGBImage, destRGBImage, w, h, channels, 
+			//	std::get<Table3D>(cube->getTable()), 1.0f, 3);
+
+			trilinear.applyTrilinearGpu(srcRGBImage, destRGBImage, 1.0f, 1);
+			//GpuTrilinear::applyTrilinearGpu(srcRGBImage, destRGBImage, w, h, channels,
+			//	std::get<Table3D>(cube->getTable()), 1.0f, 1);
 		}
 		auto end2 = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double, std::milli> duration2 = end2 - start;
 
-		std::cout << "function2() executed in " << duration2.count() << " ms" << std::endl;
-		std::cout << "function2() executed in " << duration2.count()/1000 << " ms/1000" << std::endl;
+		std::cout << loopCount <<" times total: " << duration2.count() << " ms" << std::endl;
+		std::cout << "each times:" << duration2.count()/ loopCount << " ms/"<< loopCount << std::endl;
 		std::ofstream outfile("out.rgb", std::ios::binary);
 		outfile.write((char*)destRGBImage, w * h * channels);
 		outfile.close();
